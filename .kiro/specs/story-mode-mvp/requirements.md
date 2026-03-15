@@ -2,16 +2,17 @@
 
 ## Introduction
 
-Story Mode MVP is a local-first application that generates short-form animated videos from a text prompt. The user provides a script via a web interface, selects a target video length and aspect ratio, and the system produces a multi-scene video with AI-generated visuals and TTS narration. The application runs as a localhost daemon with a Python backend and a simple web frontend, calling external AI APIs for image/video generation and text-to-speech.
+OpenStoryMode is a local-first application that generates short-form animated videos from a text prompt. The user provides a script via a web interface, selects a target video length and aspect ratio, and the system produces a multi-scene video with AI-generated visuals and TTS narration. The application runs as a localhost daemon with a Python backend and a simple web frontend, calling external AI APIs via OpenRouter (a unified API gateway) for LLM script generation, image generation, and text-to-speech.
 
 ## Glossary
 
 - **Web_UI**: The browser-based frontend served on localhost that provides the user interface for prompt input, configuration, and video playback.
-- **Backend**: The Python API server that orchestrates script processing, scene generation, TTS synthesis, and video assembly.
-- **Script_Processor**: The component within the Backend that takes a user prompt and breaks it into a structured scene-by-scene script using an LLM.
+- **Backend**: The Python API server (built with FastAPI) that orchestrates script processing, scene generation, TTS synthesis, and video assembly.
+- **OpenRouter**: A unified API gateway (https://openrouter.ai/) used for all external AI calls — LLM script generation, image generation, and TTS synthesis — via a single API key.
+- **Script_Processor**: The component within the Backend that takes a user prompt and breaks it into a structured scene-by-scene script using an LLM via OpenRouter.
 - **Scene**: A single segment of the video consisting of one visual (AI-generated image or video clip) paired with its corresponding narration audio.
-- **Visual_Generator**: The component that calls an external AI image/video generation API to produce visuals for each Scene.
-- **TTS_Engine**: The component that calls an external text-to-speech API to synthesize narration audio from script text.
+- **Visual_Generator**: The component that calls OpenRouter's image generation endpoint to produce visuals for each Scene.
+- **TTS_Engine**: The component that calls OpenRouter's text-to-speech endpoint to synthesize narration audio from script text.
 - **Video_Assembler**: The component that composites Scene visuals and narration audio into a final rendered video file.
 - **Aspect_Ratio**: The width-to-height ratio of the output video. Supported values are 9:16 (vertical) and 16:9 (horizontal).
 - **Video_Length**: The target duration of the output video. Supported values are 10s, 30s, 60s, and 90s.
@@ -47,7 +48,7 @@ Story Mode MVP is a local-first application that generates short-form animated v
 
 #### Acceptance Criteria
 
-1. WHEN a Scene script is ready, THE Visual_Generator SHALL call a single external AI image generation API to produce one visual per Scene.
+1. WHEN a Scene script is ready, THE Visual_Generator SHALL call OpenRouter's image generation endpoint to produce one visual per Scene.
 2. THE Visual_Generator SHALL generate visuals at a resolution appropriate for the selected Aspect_Ratio (minimum 720p equivalent).
 3. WHEN the image generation API call fails for a Scene, THE Visual_Generator SHALL retry the request up to 2 times before reporting an error.
 4. IF all retries fail for a Scene, THEN THE Visual_Generator SHALL report the failure to the Backend with the Scene identifier and error details.
@@ -58,7 +59,7 @@ Story Mode MVP is a local-first application that generates short-form animated v
 
 #### Acceptance Criteria
 
-1. WHEN a Scene script is ready, THE TTS_Engine SHALL synthesize narration audio from the Scene narration text using an external TTS API.
+1. WHEN a Scene script is ready, THE TTS_Engine SHALL synthesize narration audio from the Scene narration text using OpenRouter's TTS endpoint.
 2. THE TTS_Engine SHALL produce audio in a format compatible with the Video_Assembler (WAV or MP3).
 3. WHEN the TTS API call fails for a Scene, THE TTS_Engine SHALL retry the request up to 2 times before reporting an error.
 4. IF all retries fail for a Scene, THEN THE TTS_Engine SHALL report the failure to the Backend with the Scene identifier and error details.
@@ -114,5 +115,5 @@ Story Mode MVP is a local-first application that generates short-form animated v
 
 1. THE Backend SHALL run as a localhost HTTP server on a configurable port (default 8000).
 2. THE Backend SHALL serve the Web_UI static files and expose a REST API for video generation.
-3. WHEN the Backend starts, THE Backend SHALL validate that required API keys for external services are configured and report any missing keys.
-4. THE Backend SHALL read API keys and configuration from environment variables or a local configuration file.
+3. WHEN the Backend starts, THE Backend SHALL validate that the required OpenRouter API key is configured and report if it is missing.
+4. THE Backend SHALL read the OpenRouter API key and configuration from environment variables or a local configuration file.

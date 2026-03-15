@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenStoryMode</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    background: #0f0f13;
+    color: #e0e0e6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid #1e1e2a;
+    background: #13131a;
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #a78bfa;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    font-size: 0.85rem;
+    color: #6b6b80;
+    margin-top: 0.3rem;
+  }
+
+  main {
+    width: 100%;
+    max-width: 640px;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 1.25rem; }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #9090a8;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    padding: 0.75rem;
+    background: #1a1a24;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    color: #e0e0e6;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { outline: none; border-color: #a78bfa; }
+
+  .char-counter {
+    text-align: right;
+    font-size: 0.75rem;
+    color: #6b6b80;
+    margin-top: 0.3rem;
+  }
+
+  .char-counter.over { color: #f87171; }
+
+  select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: #1a1a24;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    color: #e0e0e6;
+    font-size: 0.95rem;
+    font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b6b80'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    cursor: pointer;
+  }
+
+  select:focus { outline: none; border-color: #a78bfa; }
+
+  .row {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .row .form-group { flex: 1; }
+
+  /* Submit Button */
+  #submit-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: #7c3aed;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    margin-top: 0.5rem;
+  }
+
+  #submit-btn:hover { background: #6d28d9; }
+  #submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .validation-error {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: #2a1215;
+    border: 1px solid #7f1d1d;
+    border-radius: 8px;
+    color: #f87171;
+    font-size: 0.85rem;
+  }
+
+  /* Progress */
+  .progress-card {
+    background: #1a1a24;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: 1.5rem;
+  }
+
+  .progress-stage {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #a78bfa;
+    margin-bottom: 1rem;
+  }
+
+  .progress-bar-track {
+    width: 100%;
+    height: 8px;
+    background: #2a2a3a;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .progress-pct {
+    font-size: 0.8rem;
+    color: #6b6b80;
+    margin-top: 0.5rem;
+  }
+
+  /* Result */
+  .result-card {
+    background: #1a1a24;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+  }
+
+  #video-player {
+    width: 100%;
+    display: block;
+    background: #000;
+  }
+
+  .result-actions {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .download-btn {
+    display: inline-block;
+    padding: 0.55rem 1.5rem;
+    background: #22c55e;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+
+  .download-btn:hover { background: #16a34a; }
+
+  .metadata-display {
+    padding: 0 1.25rem 1.25rem;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: #6b6b80;
+  }
+
+  .metadata-display span { white-space: nowrap; }
+
+  /* Error */
+  .error-card {
+    background: #1f1215;
+    border: 1px solid #7f1d1d;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .error-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f87171;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-stage {
+    font-size: 0.85rem;
+    color: #9090a8;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-message {
+    font-size: 0.9rem;
+    color: #e0e0e6;
+  }
+
+  /* New Generation Button */
+  .new-btn {
+    width: 100%;
+    padding: 0.7rem;
+    background: transparent;
+    color: #a78bfa;
+    border: 1px solid #a78bfa;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 1.25rem;
+    transition: background 0.2s;
+  }
+
+  .new-btn:hover { background: rgba(167, 139, 250, 0.1); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>OpenStoryMode</h1>
+  <p>Generate short-form videos from a text prompt</p>
+</header>
+
+<main>
+  <!-- Input Form -->
+  <section id="form-section">
+    <div class="form-group">
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" placeholder="Describe your video idea..." maxlength="5000"></textarea>
+      <div class="char-counter"><span id="char-count">0</span> / 5000</div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="video-length">Video Length</label>
+        <select id="video-length">
+          <option value="10s">10 seconds</option>
+          <option value="30s" selected>30 seconds</option>
+          <option value="60s">60 seconds</option>
+          <option value="90s">90 seconds</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="aspect-ratio">Aspect Ratio</label>
+        <select id="aspect-ratio">
+          <option value="9:16">9:16 (Vertical)</option>
+          <option value="16:9">16:9 (Horizontal)</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="submit-btn" type="button">Generate Video</button>
+    <div id="validation-error" class="validation-error" role="alert" hidden></div>
+  </section>
+
+  <!-- Progress Section -->
+  <section id="progress-section" hidden>
+    <div class="progress-card">
+      <div class="progress-stage" id="progress-stage">Queued</div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-bar" style="width: 0%"></div>
+      </div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+  </section>
+
+  <!-- Result Section -->
+  <section id="result-section" hidden>
+    <div class="result-card">
+      <video id="video-player" controls playsinline></video>
+      <div class="result-actions">
+        <a id="download-btn" class="download-btn" download>Download MP4</a>
+      </div>
+      <div id="metadata-display" class="metadata-display"></div>
+    </div>
+  </section>
+
+  <!-- Error Section -->
+  <section id="error-section" hidden>
+    <div class="error-card" role="alert">
+      <div class="error-title">Generation Failed</div>
+      <div class="error-stage" id="error-stage"></div>
+      <div class="error-message" id="error-message"></div>
+    </div>
+  </section>
+
+  <!-- New Generation Button (shown after result or error) -->
+  <button id="new-btn" class="new-btn" type="button" hidden>Generate Another Video</button>
+</main>
+
+<script>
+(function() {
+  // DOM elements
+  const promptEl = document.getElementById('prompt');
+  const charCountEl = document.getElementById('char-count');
+  const videoLengthEl = document.getElementById('video-length');
+  const aspectRatioEl = document.getElementById('aspect-ratio');
+  const submitBtn = document.getElementById('submit-btn');
+  const validationError = document.getElementById('validation-error');
+  const formSection = document.getElementById('form-section');
+  const progressSection = document.getElementById('progress-section');
+  const progressStage = document.getElementById('progress-stage');
+  const progressBar = document.getElementById('progress-bar');
+  const progressPct = document.getElementById('progress-pct');
+  const resultSection = document.getElementById('result-section');
+  const videoPlayer = document.getElementById('video-player');
+  const downloadBtn = document.getElementById('download-btn');
+  const metadataDisplay = document.getElementById('metadata-display');
+  const errorSection = document.getElementById('error-section');
+  const errorStage = document.getElementById('error-stage');
+  const errorMessage = document.getElementById('error-message');
+  const newBtn = document.getElementById('new-btn');
+
+  // Stage display names
+  const STAGE_NAMES = {
+    queued: 'Queued',
+    script_generation: 'Generating Script...',
+    visual_generation: 'Generating Visuals...',
+    tts_synthesis: 'Synthesizing Narration...',
+    video_assembly: 'Assembling Video...',
+    complete: 'Complete',
+    error: 'Error'
+  };
+
+  let pollTimer = null;
+
+  // Character counter
+  promptEl.addEventListener('input', function() {
+    const len = promptEl.value.length;
+    charCountEl.textContent = len;
+    charCountEl.parentElement.classList.toggle('over', len > 5000);
+  });
+
+  // Validation
+  function validateForm() {
+    const prompt = promptEl.value;
+    if (!prompt || !prompt.trim()) {
+      showValidationError('Please enter a prompt for your video.');
+      return false;
+    }
+    if (prompt.length > 5000) {
+      showValidationError('Prompt must be 5000 characters or fewer.');
+      return false;
+    }
+    hideValidationError();
+    return true;
+  }
+
+  function showValidationError(msg) {
+    validationError.textContent = msg;
+    validationError.hidden = false;
+  }
+
+  function hideValidationError() {
+    validationError.hidden = true;
+  }
+
+  // Submit
+  submitBtn.addEventListener('click', async function() {
+    if (!validateForm()) return;
+
+    submitBtn.disabled = true;
+    hideValidationError();
+
+    const body = {
+      prompt: promptEl.value.trim(),
+      video_length: videoLengthEl.value,
+      aspect_ratio: aspectRatioEl.value
+    };
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        const detail = data && data.detail ? (Array.isArray(data.detail) ? data.detail.join(', ') : data.detail) : 'Request failed';
+        showValidationError(detail);
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const data = await res.json();
+      startPolling(data.job_id);
+    } catch (err) {
+      showValidationError('Network error. Is the server running?');
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Polling
+  function startPolling(jobId) {
+    // Show progress, hide others
+    progressSection.hidden = false;
+    resultSection.hidden = true;
+    errorSection.hidden = true;
+    newBtn.hidden = true;
+    progressStage.textContent = STAGE_NAMES.queued;
+    progressBar.style.width = '0%';
+    progressPct.textContent = '0%';
+
+    pollTimer = setInterval(async function() {
+      try {
+        const res = await fetch('/api/status/' + jobId);
+        if (!res.ok) {
+          clearInterval(pollTimer);
+          showError('Status check failed', null);
+          return;
+        }
+
+        const data = await res.json();
+        updateProgress(data);
+
+        if (data.status === 'complete') {
+          clearInterval(pollTimer);
+          showResult(data);
+        } else if (data.status === 'error') {
+          clearInterval(pollTimer);
+          showError(data.error, data.error_stage);
+        }
+      } catch (err) {
+        clearInterval(pollTimer);
+        showError('Lost connection to server', null);
+      }
+    }, 4000);
+  }
+
+  function updateProgress(data) {
+    const stageName = STAGE_NAMES[data.stage] || data.stage;
+    progressStage.textContent = stageName;
+    progressBar.style.width = data.progress_pct + '%';
+    progressPct.textContent = data.progress_pct + '%';
+  }
+
+  // Show result
+  function showResult(data) {
+    progressSection.hidden = true;
+
+    videoPlayer.src = data.video_url;
+    downloadBtn.href = data.video_url;
+    downloadBtn.download = 'video.mp4';
+
+    // Metadata
+    metadataDisplay.innerHTML = '';
+    if (data.metadata) {
+      const m = data.metadata;
+      if (m.duration != null) {
+        addMeta('Duration: ' + m.duration.toFixed(1) + 's');
+      }
+      if (m.aspect_ratio) {
+        addMeta('Aspect Ratio: ' + m.aspect_ratio);
+      }
+      if (m.file_size != null) {
+        addMeta('Size: ' + formatBytes(m.file_size));
+      }
+    }
+
+    resultSection.hidden = false;
+    newBtn.hidden = false;
+  }
+
+  function addMeta(text) {
+    const span = document.createElement('span');
+    span.textContent = text;
+    metadataDisplay.appendChild(span);
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  // Show error
+  function showError(message, stage) {
+    progressSection.hidden = true;
+    resultSection.hidden = true;
+
+    if (stage) {
+      const stageName = STAGE_NAMES[stage] || stage;
+      errorStage.textContent = 'Failed during: ' + stageName;
+    } else {
+      errorStage.textContent = '';
+    }
+    errorMessage.textContent = message || 'An unknown error occurred.';
+
+    errorSection.hidden = false;
+    newBtn.hidden = false;
+  }
+
+  // New generation
+  newBtn.addEventListener('click', function() {
+    // Reset UI
+    progressSection.hidden = true;
+    resultSection.hidden = true;
+    errorSection.hidden = true;
+    newBtn.hidden = true;
+    submitBtn.disabled = false;
+    videoPlayer.src = '';
+    promptEl.value = '';
+    charCountEl.textContent = '0';
+    hideValidationError();
+    promptEl.focus();
+  });
+})();
+</script>
+
+</body>
+</html>
