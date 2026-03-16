@@ -299,8 +299,11 @@ def build_drawtext_filter(
         if current_line:
             lines.append(" ".join(current_line))
 
-        display_text = "\\n".join(lines)
-        escaped_text = escape_ffmpeg_text(display_text)
+        # Escape each line individually, then join with FFmpeg's drawtext
+        # line-break sequence (literal backslash + n).  We must escape first
+        # so that the backslash in the join separator isn't double-escaped.
+        escaped_lines = [escape_ffmpeg_text(line) for line in lines]
+        escaped_text = "\x5cn".join(escaped_lines)
         x_margin = int(video_width * (1 - MAX_WIDTH_RATIO) / 2)
 
         dt_filter = (
