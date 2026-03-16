@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -58,17 +58,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Vibe Your Videos", lifespan=lifespan)
 
 
-def _run_pipeline_sync(job: Job) -> None:
-    """Run the async pipeline in a new event loop for background execution."""
-    loop = asyncio.new_event_loop()
+async def _run_pipeline_background(job: Job) -> None:
+    """Run the pipeline as a background coroutine, catching exceptions to avoid unhandled task errors."""
     try:
-        loop.run_until_complete(run_pipeline(job))
-    finally:
-        loop.close()
+        await run_pipeline(job)
+    except Exception as e:
+        logger.error("Job %s: unhandled pipeline error: %s", job.job_id, e)
+        job.error = str(e)
+        job.stage = JobStage.ERROR
 
 
 @app.post("/api/generate", status_code=202)
-async def generate(request: GenerateRequest, background_tasks: BackgroundTasks) -> JSONResponse:
+async def generate(request: GenerateRequest) -> JSONResponse:
     """Validate request, create a Job, launch pipeline as background task, return 202."""
     if not config.api_key_configured:
         return JSONResponse(
@@ -91,7 +92,7 @@ async def generate(request: GenerateRequest, background_tasks: BackgroundTasks) 
     job = Job(request=result.request)
     jobs[job.job_id] = job
 
-    background_tasks.add_task(_run_pipeline_sync, job)
+    asyncio.create_task(_run_pipeline_background(job))
 
     return JSONResponse(
         status_code=202,

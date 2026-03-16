@@ -5,7 +5,7 @@ import asyncio
 import logging
 from pathlib import Path
 
-from app.caption_renderer import build_drawtext_filter
+from app.caption_renderer import build_ass_file, build_drawtext_filter
 from app.models import AspectRatio, CaptionMode, Scene, SceneAsset
 
 logger = logging.getLogger(__name__)
@@ -285,52 +285,40 @@ async def _assemble_multi_scene(
             f":offset={offset}[vout]"
         )
 
-    # Inject caption drawtext filters onto [vout] as a post-processing chain
+    # Inject captions via ASS subtitle file (single `ass` filter instead of
+    # hundreds of drawtext filters that blow up the filter graph size)
+    ass_path: Path | None = None
     if scenes is not None and len(scenes) >= n:
-        # Compute cumulative start times accounting for crossfade overlaps
-        # Scene 0 starts at 0, scene i starts at sum(durations[0:i]) - i * CROSSFADE_DURATION
         start_times: list[float] = [0.0]
         for i in range(1, n):
             start_times.append(
                 start_times[i - 1] + durations[i - 1] - CROSSFADE_DURATION
             )
 
-        # Build caption drawtext filters for each scene
-        caption_filters: list[str] = []
-        for i in range(n):
-            scene = scenes[i]
-            if not scene.narration_text or not scene.narration_text.strip():
-                continue
-            try:
-                crossfade_dur = CROSSFADE_DURATION if i > 0 else 0.0
-                drawtext = build_drawtext_filter(
-                    text=scene.narration_text,
-                    duration=durations[i],
-                    video_width=width,
-                    video_height=height,
-                    start_time=start_times[i],
-                    crossfade_duration=crossfade_dur,
-                )
-                if drawtext:
-                    caption_filters.append(drawtext)
-            except Exception:
-                logger.warning(
-                    "Caption generation failed for scene %d, proceeding without captions",
-                    scene.index,
-                    exc_info=True,
-                )
-
-        if caption_filters:
-            # Rename [vout] to [vbase], apply caption chain, produce final [vout]
-            # Find the last video filter (before audio filters) that outputs [vout]
+        try:
+            ass_path = build_ass_file(
+                scenes=scenes,
+                durations=durations,
+                video_width=width,
+                video_height=height,
+                start_times=start_times,
+                crossfade_duration=CROSSFADE_DURATION,
+                output_path=output_path.parent,
+            )
+            # Rename [vout] to [vbase], apply ass filter, produce final [vout]
             for idx in range(len(filter_parts) - 1, -1, -1):
                 if filter_parts[idx].endswith("[vout]"):
                     filter_parts[idx] = filter_parts[idx][:-6] + "[vbase]"
                     break
 
-            # Chain all caption drawtext filters on [vbase] -> [vout]
-            all_captions = ",".join(caption_filters)
-            filter_parts.append(f"[vbase]{all_captions}[vout]")
+            # Escape colons in the path for FFmpeg filter syntax
+            escaped_ass = str(ass_path).replace("\\", "\\\\").replace(":", "\\:")
+            filter_parts.append(f"[vbase]ass={escaped_ass}[vout]")
+        except Exception:
+            logger.warning(
+                "ASS caption generation failed, proceeding without captions",
+                exc_info=True,
+            )
 
     # Normalize and concatenate audio streams
     for i in range(n):
@@ -344,16 +332,21 @@ async def _assemble_multi_scene(
 
     filter_graph = ";\n".join(filter_parts)
 
-    await _run_ffmpeg([
-        "-y",
-        *input_args,
-        "-filter_complex", filter_graph,
-        "-map", "[vout]",
-        "-map", "[aout]",
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-c:a", "aac",
-        "-r", "25",
-        str(output_path),
-    ])
+    try:
+        await _run_ffmpeg([
+            "-y",
+            *input_args,
+            "-filter_complex", filter_graph,
+            "-map", "[vout]",
+            "-map", "[aout]",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-c:a", "aac",
+            "-r", "25",
+            str(output_path),
+        ])
+    finally:
+        # Clean up ASS file after encoding
+        if ass_path and ass_path.exists():
+            ass_path.unlink(missing_ok=True)
 

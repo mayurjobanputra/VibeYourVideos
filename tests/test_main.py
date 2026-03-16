@@ -33,7 +33,7 @@ def client():
 
 class TestGenerateEndpoint:
     def test_valid_request_returns_202(self, client):
-        with patch("app.main._run_pipeline_sync"):
+        with patch("app.main.run_pipeline"):
             resp = client.post("/api/generate", json={
                 "prompt": "A story about a cat",
                 "video_length": "30s",
@@ -69,7 +69,7 @@ class TestGenerateEndpoint:
         assert resp.status_code == 422
 
     def test_job_stored_in_memory(self, client):
-        with patch("app.main._run_pipeline_sync"):
+        with patch("app.main.run_pipeline"):
             resp = client.post("/api/generate", json={
                 "prompt": "Test prompt",
                 "video_length": "10s",
@@ -345,7 +345,7 @@ class TestJobCreatedAt:
         """Verify that created_at is set when a Job is created via POST /api/generate."""
         from datetime import datetime
 
-        with patch("app.main._run_pipeline_sync"):
+        with patch("app.main.run_pipeline"):
             resp = client.post("/api/generate", json={
                 "prompt": "A story about timestamps",
                 "video_length": "30s",
@@ -364,7 +364,7 @@ class TestJobCreatedAt:
 
     def test_generate_created_at_returned_in_status(self, client):
         """Verify created_at is returned in the status endpoint response."""
-        with patch("app.main._run_pipeline_sync"):
+        with patch("app.main.run_pipeline"):
             resp = client.post("/api/generate", json={
                 "prompt": "Timestamp test",
                 "video_length": "10s",
