@@ -299,7 +299,7 @@ def build_drawtext_filter(
         if current_line:
             lines.append(" ".join(current_line))
 
-        display_text = "\n".join(lines)
+        display_text = "\\n".join(lines)
         escaped_text = escape_ffmpeg_text(display_text)
         x_margin = int(video_width * (1 - MAX_WIDTH_RATIO) / 2)
 
