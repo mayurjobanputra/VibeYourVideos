@@ -3,7 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vibe Your Videos</title>
+<title>VibeYourVideos.com</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-icon-180x180.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="msapplication-TileColor" content="#0f0f13">
+<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+<meta name="theme-color" content="#0f0f13">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -34,6 +51,14 @@
     letter-spacing: -0.02em;
     margin-right: 2rem;
     padding: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-brand img {
+    width: 24px;
+    height: 24px;
   }
 
   .nav-items {
@@ -757,7 +782,7 @@
 <body>
 
 <nav class="nav-bar" role="navigation" aria-label="Main navigation">
-  <div class="nav-brand">Vibe Your Videos</div>
+  <div class="nav-brand"><img src="/favicon-32x32.png" alt="" width="24" height="24">VibeYourVideos.com</div>
   <ul class="nav-items">
     <li><a class="nav-item active" data-view="create-video" href="/" role="button">Create Video</a></li>
     <li><a class="nav-item" data-view="jobs" href="/jobs" role="button">Jobs</a></li>
