@@ -172,7 +172,11 @@ async def _assemble_single_scene(
     height: int,
     narration_text: str | None = None,
 ) -> None:
-    """Assemble a single-scene video (no crossfade needed)."""
+    """Assemble a single-scene video (no crossfade needed).
+
+    Uses ASS subtitles for captions instead of drawtext filters to avoid
+    FFmpeg filter-quoting issues with apostrophes and special characters.
+    """
     duration = await _get_audio_duration(asset.audio_path)
 
     vf = (
@@ -181,16 +185,26 @@ async def _assemble_single_scene(
         "format=yuv420p"
     )
 
+    ass_path: Path | None = None
     if narration_text:
         try:
-            drawtext = build_drawtext_filter(
-                text=narration_text,
-                duration=duration,
+            # Build a single-element scene list for the ASS generator
+            dummy_scene = Scene(
+                index=0,
+                narration_text=narration_text,
+                visual_description="",
+            )
+            ass_path = build_ass_file(
+                scenes=[dummy_scene],
+                durations=[duration],
                 video_width=width,
                 video_height=height,
+                start_times=[0.0],
+                crossfade_duration=0.0,
+                output_path=output_path.parent,
             )
-            if drawtext:
-                vf = vf + "," + drawtext
+            escaped_ass = str(ass_path).replace("\\", "\\\\").replace(":", "\\:")
+            vf = vf + f",ass={escaped_ass}"
         except Exception:
             logger.warning(
                 "Caption generation failed for scene %d, proceeding without captions",
@@ -198,21 +212,25 @@ async def _assemble_single_scene(
                 exc_info=True,
             )
 
-    await _run_ffmpeg([
-        "-y",
-        "-framerate", "25",
-        "-loop", "1",
-        "-t", str(duration),
-        "-i", str(asset.image_path),
-        "-i", str(asset.audio_path),
-        "-vf", vf,
-        "-af", "aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo",
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-c:a", "aac",
-        "-r", "25",
-        str(output_path),
-    ])
+    try:
+        await _run_ffmpeg([
+            "-y",
+            "-framerate", "25",
+            "-loop", "1",
+            "-t", str(duration),
+            "-i", str(asset.image_path),
+            "-i", str(asset.audio_path),
+            "-vf", vf,
+            "-af", "aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-c:a", "aac",
+            "-r", "25",
+            str(output_path),
+        ])
+    finally:
+        if ass_path and ass_path.exists():
+            ass_path.unlink(missing_ok=True)
 
 
 
